@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
-    private static final int MAX_PAGES = 100000;
+    private static final int MAX_PAGES = 10000;
 
     private static FacebookClient facebookClient;
 
@@ -49,10 +49,8 @@ public class Crawler {
             if (i > MAX_PAGES) {
                 break;
             }
-            System.out.print(".");
-            if (i % (MAX_PAGES / 100) == 0) {
-                System.out.println(" ");
-                System.out.println(i  / MAX_PAGES * 100 + "%");
+            if (i % 100 == 0) {
+                System.out.println((i * 1.0) / MAX_PAGES * 100 + "%");
             }
         }
 
@@ -66,7 +64,6 @@ public class Crawler {
             JsonObject reactionData = facebookClient.fetchObject(id, JsonObject.class, Parameter.with("fields", StringUtils.join(parameters)));
             return Arrays.stream(ReactionTypes.values()).collect(Collectors.toMap(r -> r, r -> reactionData.getJsonObject(r.toString()).getJsonObject("summary").getInt("total_count")));
         } catch (FacebookGraphException e) {
-            System.out.print(",");
             return null;
         }
     }

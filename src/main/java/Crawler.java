@@ -16,7 +16,10 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
+    private static final int MAX_PAGES = 100000;
+
     private static FacebookClient facebookClient;
+
 
     public static void main(String[] args) throws IOException {
         crawlPage(args[0]);
@@ -36,11 +39,17 @@ public class Crawler {
                 Map<ReactionTypes, Integer> data = getReactionCount(post.getId());
                 printer.printRecord(post.getId(), data.get(ReactionTypes.ANGRY), data.get(ReactionTypes.HAHA), data.get(ReactionTypes.LIKE), data.get(ReactionTypes.LOVE), data.get(ReactionTypes.SAD), data.get(ReactionTypes.WOW), post.getLink(), post.getMessage());
             }
+
+            // process log
             i++;
-            if (i > 10) {
+            if (i > MAX_PAGES) {
                 break;
             }
-            System.out.println(i);
+            System.out.print(".");
+            if (i % (MAX_PAGES / 100) == 0) {
+                System.out.println(" ");
+                System.out.println(i  / MAX_PAGES * 100 + "%");
+            }
         }
 
         printer.close();

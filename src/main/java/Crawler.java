@@ -1,4 +1,5 @@
 import com.restfb.*;
+import com.restfb.exception.FacebookGraphException;
 import com.restfb.json.JsonObject;
 import com.restfb.types.Post;
 import com.restfb.util.StringUtils;
@@ -37,6 +38,9 @@ public class Crawler {
         for (List<Post> posts : targetedSearch) {
             for (Post post : posts) {
                 Map<ReactionTypes, Integer> data = getReactionCount(post.getId());
+                if (data == null) {
+                    continue;
+                }
                 printer.printRecord(post.getId(), data.get(ReactionTypes.ANGRY), data.get(ReactionTypes.HAHA), data.get(ReactionTypes.LIKE), data.get(ReactionTypes.LOVE), data.get(ReactionTypes.SAD), data.get(ReactionTypes.WOW), post.getLink(), post.getMessage());
             }
 
@@ -58,10 +62,13 @@ public class Crawler {
 
     private static Map<ReactionTypes, Integer> getReactionCount(String id) {
         List<String> parameters = Arrays.stream(ReactionTypes.values()).map(r -> "reactions.type("+r+").limit(0).summary(total_count).as("+r+")").collect(Collectors.toList());
-
-        JsonObject reactionData = facebookClient.fetchObject(id, JsonObject.class, Parameter.with("fields", StringUtils.join(parameters)));
-
-        return Arrays.stream(ReactionTypes.values()).collect(Collectors.toMap(r -> r, r -> reactionData.getJsonObject(r.toString()).getJsonObject("summary").getInt("total_count")));
+        try {
+            JsonObject reactionData = facebookClient.fetchObject(id, JsonObject.class, Parameter.with("fields", StringUtils.join(parameters)));
+            return Arrays.stream(ReactionTypes.values()).collect(Collectors.toMap(r -> r, r -> reactionData.getJsonObject(r.toString()).getJsonObject("summary").getInt("total_count")));
+        } catch (FacebookGraphException e) {
+            System.out.print(",");
+            return null;
+        }
     }
 
 }

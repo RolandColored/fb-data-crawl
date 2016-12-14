@@ -17,16 +17,18 @@ import java.util.stream.Collectors;
 public class Crawler {
 
     private static FacebookClient facebookClient;
-    private static final String PAGE_NAME = "page_name";
 
     public static void main(String[] args) throws IOException {
-        final String accessToken = "";
-        final Writer out = new FileWriter(PAGE_NAME + ".csv");
+        crawlPage(args[0]);
+    }
+
+    private static void crawlPage(String pageName) throws IOException {
+        final Writer out = new FileWriter(pageName + ".csv");
         final CSVPrinter printer = CSVFormat.DEFAULT.withHeader("id", ReactionTypes.ANGRY.toString(), ReactionTypes.HAHA.toString(), ReactionTypes.LIKE.toString(), ReactionTypes.LOVE.toString(), ReactionTypes.SAD.toString(), ReactionTypes.WOW.toString(), "link", "message").print(out);
 
-        facebookClient = new DefaultFacebookClient(accessToken, Version.VERSION_2_8);
+        facebookClient = new DefaultFacebookClient(Config.ACCESS_TOKEN, Version.VERSION_2_8);
 
-        Connection<Post> targetedSearch = facebookClient.fetchConnection(PAGE_NAME + "/posts", Post.class, Parameter.with("fields", "link,message"));
+        Connection<Post> targetedSearch = facebookClient.fetchConnection(pageName + "/posts", Post.class, Parameter.with("fields", "link,message"));
         int i = 0;
 
         for (List<Post> posts : targetedSearch) {

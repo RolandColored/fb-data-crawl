@@ -17,8 +17,6 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
-    private static final int MAX_PAGES = 10000;
-
     private static FacebookClient facebookClient;
 
 
@@ -28,11 +26,13 @@ public class Crawler {
 
     private static void crawlPage(String pageName) throws IOException {
         final Writer out = new FileWriter(pageName + ".csv");
-        final CSVPrinter printer = CSVFormat.DEFAULT.withHeader("id", ReactionTypes.ANGRY.toString(), ReactionTypes.HAHA.toString(), ReactionTypes.LIKE.toString(), ReactionTypes.LOVE.toString(), ReactionTypes.SAD.toString(), ReactionTypes.WOW.toString(), "link", "message").print(out);
+        final CSVPrinter printer = CSVFormat.DEFAULT.withHeader("id", ReactionTypes.ANGRY.toString(), ReactionTypes.HAHA.toString(), ReactionTypes.LIKE.toString(), ReactionTypes.LOVE.toString(), ReactionTypes.SAD.toString(), ReactionTypes.WOW.toString(), "link", "message", "date").print(out);
 
         facebookClient = new DefaultFacebookClient(Config.ACCESS_TOKEN, Version.VERSION_2_8);
 
-        Connection<Post> targetedSearch = facebookClient.fetchConnection(pageName + "/posts", Post.class, Parameter.with("fields", "link,message"));
+        // fetch posts from march 2016 (right after feature introduction) until now
+        Connection<Post> targetedSearch = facebookClient.fetchConnection(pageName + "/posts", Post.class,
+                Parameter.with("fields", "link,message,created_time"), Parameter.with("since", "2016-03-01"));
         int i = 0;
 
         for (List<Post> posts : targetedSearch) {
@@ -41,19 +41,18 @@ public class Crawler {
                 if (data == null) {
                     continue;
                 }
-                printer.printRecord(post.getId(), data.get(ReactionTypes.ANGRY), data.get(ReactionTypes.HAHA), data.get(ReactionTypes.LIKE), data.get(ReactionTypes.LOVE), data.get(ReactionTypes.SAD), data.get(ReactionTypes.WOW), post.getLink(), post.getMessage());
+
+                printer.printRecord(post.getId(), data.get(ReactionTypes.ANGRY), data.get(ReactionTypes.HAHA), data.get(ReactionTypes.LIKE),
+                        data.get(ReactionTypes.LOVE), data.get(ReactionTypes.SAD), data.get(ReactionTypes.WOW), post.getLink(), post.getMessage(), post.getCreatedTime());
             }
 
             // process log
             i++;
-            if (i > MAX_PAGES) {
-                break;
-            }
-            if (i % 100 == 0) {
-                System.out.println((i * 1.0) / MAX_PAGES * 100 + "%");
+            if (i % 10 == 0) {
+                System.out.println(i);
             }
         }
-
+        System.out.println("No more posts");
         printer.close();
         out.close();
     }
@@ -64,6 +63,7 @@ public class Crawler {
             JsonObject reactionData = facebookClient.fetchObject(id, JsonObject.class, Parameter.with("fields", StringUtils.join(parameters)));
             return Arrays.stream(ReactionTypes.values()).collect(Collectors.toMap(r -> r, r -> reactionData.getJsonObject(r.toString()).getJsonObject("summary").getInt("total_count")));
         } catch (FacebookGraphException e) {
+            e.printStackTrace();
             return null;
         }
     }
